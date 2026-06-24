@@ -5,50 +5,42 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from team_finder.pagination import paginate
 
+from .constants import SKILLS_AUTOCOMPLETE_LIMIT
 from .forms import ChangePasswordForm, EditProfileForm, LoginForm, RegisterForm
 from .models import Skill, User
 
-SKILLS_AUTOCOMPLETE_LIMIT = 10
-
 
 def register(request):
-    if request.method == "POST":
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect(reverse("projects:list"))
-    else:
-        form = RegisterForm()
+    form = RegisterForm(request.POST or None)
+    if form.is_valid():
+        user = form.save()
+        login(request, user)
+        return redirect("projects:list")
     return render(request, "users/register.html", {"form": form})
 
 
 def login_view(request):
-    if request.method == "POST":
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            user = authenticate(
-                request,
-                username=form.cleaned_data["email"],
-                password=form.cleaned_data["password"],
-            )
-            if user:
-                login(request, user)
-                return redirect(reverse("projects:list"))
-            form.add_error(None, "Неверный имейл или пароль")
-    else:
-        form = LoginForm()
+    form = LoginForm(request.POST or None)
+    if form.is_valid():
+        user = authenticate(
+            request,
+            username=form.cleaned_data["email"],
+            password=form.cleaned_data["password"],
+        )
+        if user:
+            login(request, user)
+            return redirect("projects:list")
+        form.add_error(None, "Неверный имейл или пароль")
     return render(request, "users/login.html", {"form": form})
 
 
 def logout_view(request):
     logout(request)
-    return redirect(reverse("projects:list"))
+    return redirect("projects:list")
 
 
 def user_detail(request, user_id):
@@ -58,27 +50,21 @@ def user_detail(request, user_id):
 
 @login_required
 def edit_profile(request):
-    if request.method == "POST":
-        form = EditProfileForm(request.POST, request.FILES, instance=request.user)
-        if form.is_valid():
-            form.save()
-            return redirect(reverse("users:detail", kwargs={"user_id": request.user.id}))
-    else:
-        form = EditProfileForm(instance=request.user)
+    form = EditProfileForm(request.POST or None, request.FILES or None, instance=request.user)
+    if form.is_valid():
+        form.save()
+        return redirect("users:detail", user_id=request.user.id)
     return render(request, "users/edit_profile.html", {"form": form})
 
 
 @login_required
 def change_password(request):
-    if request.method == "POST":
-        form = ChangePasswordForm(request.user, request.POST)
-        if form.is_valid():
-            request.user.set_password(form.cleaned_data["new_password1"])
-            request.user.save()
-            login(request, request.user)
-            return redirect(reverse("users:detail", kwargs={"user_id": request.user.id}))
-    else:
-        form = ChangePasswordForm(request.user)
+    form = ChangePasswordForm(request.user, request.POST or None)
+    if form.is_valid():
+        request.user.set_password(form.cleaned_data["new_password1"])
+        request.user.save()
+        login(request, request.user)
+        return redirect("users:detail", user_id=request.user.id)
     return render(request, "users/change_password.html", {"form": form})
 
 
@@ -108,8 +94,8 @@ def users_list(request):
 
 
 def skills_autocomplete(request):
-    q = request.GET.get("q", "").strip()
-    qs = Skill.objects.filter(name__istartswith=q).order_by("name")[:SKILLS_AUTOCOMPLETE_LIMIT]
+    query = request.GET.get("q", "").strip()
+    qs = Skill.objects.filter(name__istartswith=query).order_by("name")[:SKILLS_AUTOCOMPLETE_LIMIT]
     data = [{"id": s.id, "name": s.name} for s in qs]
     return JsonResponse(data, safe=False)
 

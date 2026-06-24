@@ -76,3 +76,9 @@ python manage.py test --settings=team_finder.settings_test
 
 Сайт: http://localhost:8000  
 Админ: http://localhost:8000/admin/
+
+## Автор
+
+**erty019** — Матюнина Александра  
+GitHub: https://github.com/erty019  
+Email: matyuninaaleksandra1@gmail.com

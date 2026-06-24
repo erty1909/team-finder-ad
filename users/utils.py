@@ -1,18 +1,10 @@
 import io
 import random
+from enum import StrEnum
 
 from PIL import Image, ImageDraw, ImageFont
 
-AVATAR_COLORS = [
-    "#4A90D9",
-    "#7B68EE",
-    "#20B2AA",
-    "#3CB371",
-    "#CD853F",
-    "#708090",
-    "#9370DB",
-    "#E07B54",
-]
+from .constants import AVATAR_TEXT_COLOR
 
 AVATAR_SIZE = 100
 AVATAR_FONT_SIZE = 52
@@ -22,13 +14,20 @@ FONT_PATHS = [
 ]
 
 
-def generate_avatar_image(first_letter: str):
-    """Generate a PNG avatar with a letter on a solid background.
+class AvatarColor(StrEnum):
+    BLUE = "#4A90D9"
+    SLATE_BLUE = "#7B68EE"
+    TEAL = "#20B2AA"
+    GREEN = "#3CB371"
+    BROWN = "#CD853F"
+    GRAY = "#708090"
+    PURPLE = "#9370DB"
+    ORANGE = "#E07B54"
 
-    Returns raw PNG bytes, or None if generation fails.
-    """
+
+def generate_avatar_image(first_letter: str):
     try:
-        color = random.choice(AVATAR_COLORS)
+        color = random.choice(list(AvatarColor))
         img = Image.new("RGB", (AVATAR_SIZE, AVATAR_SIZE), color)
         draw = ImageDraw.Draw(img)
         letter = first_letter.upper()
@@ -41,14 +40,14 @@ def generate_avatar_image(first_letter: str):
             except OSError:
                 pass
         if font is None:
-            font = ImageFont.load_default()
+            font = ImageFont.load_default(size=AVATAR_FONT_SIZE)
 
         bbox = draw.textbbox((0, 0), letter, font=font)
         w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
         draw.text(
             ((AVATAR_SIZE - w) // 2 - bbox[0], (AVATAR_SIZE - h) // 2 - bbox[1]),
             letter,
-            fill="white",
+            fill=AVATAR_TEXT_COLOR,
             font=font,
         )
 

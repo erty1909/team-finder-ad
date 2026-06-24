@@ -1,7 +1,8 @@
-import re
-
 from django import forms
 
+from team_finder.mixins import GitHubUrlMixin
+
+from .constants import PHONE_RE
 from .models import User
 
 
@@ -30,10 +31,7 @@ class LoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput, label="Пароль")
 
 
-PHONE_RE = re.compile(r"^(\+7|8)\d{10}$")
-
-
-class EditProfileForm(forms.ModelForm):
+class EditProfileForm(GitHubUrlMixin, forms.ModelForm):
     class Meta:
         model = User
         fields = ["name", "surname", "avatar", "about", "phone", "github_url"]
@@ -57,7 +55,6 @@ class EditProfileForm(forms.ModelForm):
             raise forms.ValidationError(
                 "Введите номер в формате 8XXXXXXXXXX или +7XXXXXXXXXX."
             )
-        # Нормализуем к формату +7
         if phone.startswith("8"):
             phone = "+7" + phone[1:]
         qs = User.objects.filter(phone=phone)
@@ -66,12 +63,6 @@ class EditProfileForm(forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError("Этот номер телефона уже занят.")
         return phone
-
-    def clean_github_url(self):
-        url = self.cleaned_data.get("github_url", "").strip()
-        if url and "github.com" not in url:
-            raise forms.ValidationError("Ссылка должна вести на GitHub.")
-        return url
 
 
 class ChangePasswordForm(forms.Form):
